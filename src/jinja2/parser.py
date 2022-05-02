@@ -703,17 +703,16 @@ class Parser:
         expression in parentheses.  This is used to figure out if an empty
         tuple is a valid expression or not.
         """
-        import functools
-
         lineno = self.stream.current.lineno
         if simplified:
-            parse = functools.partial(self.parse_primary, with_namespace=with_namespace)
-        elif with_condexpr:
-            parse = self.parse_expression
+
+            def parse() -> nodes.Expr:
+                return self.parse_primary(with_namespace=with_namespace)
+
         else:
 
             def parse() -> nodes.Expr:
-                return self.parse_expression(with_condexpr=False)
+                return self.parse_expression(with_condexpr=with_condexpr)
 
         args: t.List[nodes.Expr] = []
         is_tuple = False
