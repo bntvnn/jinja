@@ -130,7 +130,7 @@ class Symbols:
             self.stores.update(sym.stores)
 
         for name in stores:
-            target = self.find_ref(name)  # type: ignore
+            target = self.find_ref(name)
             assert target is not None, "should not happen"
 
             if self.parent is not None:
