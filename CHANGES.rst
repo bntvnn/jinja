@@ -3,7 +3,10 @@
 Version 3.2.0
 -------------
 
-Unreleased
+Released TBD
+
+-   Add support for assigning to namespaced attributes as a part of multi-target
+    assignments :issue:`1413`
 
 
 Version 3.1.2
