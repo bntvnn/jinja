@@ -485,21 +485,18 @@ class Parser:
         """
         target: nodes.Expr
 
-        if with_namespace and self.stream.look().type == "dot":
-            token = self.stream.expect("name")
-            next(self.stream)  # dot
-            attr = self.stream.expect("name")
-            target = nodes.NSRef(token.value, attr.value, lineno=token.lineno)
-        elif name_only:
+        if name_only:
             token = self.stream.expect("name")
             target = nodes.Name(token.value, "store", lineno=token.lineno)
         else:
             if with_tuple:
                 target = self.parse_tuple(
-                    simplified=True, extra_end_rules=extra_end_rules
+                    simplified=True,
+                    extra_end_rules=extra_end_rules,
+                    with_namespace=with_namespace,
                 )
             else:
-                target = self.parse_primary()
+                target = self.parse_primary(with_namespace=with_namespace)
 
             target.set_ctx("store")
 
@@ -641,7 +638,7 @@ class Parser:
             node = self.parse_filter_expr(node)
         return node
 
-    def parse_primary(self) -> nodes.Expr:
+    def parse_primary(self, with_namespace: bool = False) -> nodes.Expr:
         token = self.stream.current
         node: nodes.Expr
         if token.type == "name":
@@ -649,6 +646,11 @@ class Parser:
                 node = nodes.Const(token.value in ("true", "True"), lineno=token.lineno)
             elif token.value in ("none", "None"):
                 node = nodes.Const(None, lineno=token.lineno)
+            elif with_namespace and self.stream.look().type == "dot":
+                next(self.stream)  # token
+                next(self.stream)  # dot
+                attr = self.stream.current
+                node = nodes.NSRef(token.value, attr.value, lineno=token.lineno)
             else:
                 node = nodes.Name(token.value, "load", lineno=token.lineno)
             next(self.stream)
@@ -681,6 +683,7 @@ class Parser:
         with_condexpr: bool = True,
         extra_end_rules: t.Optional[t.Tuple[str, ...]] = None,
         explicit_parentheses: bool = False,
+        with_namespace: bool = False,
     ) -> t.Union[nodes.Tuple, nodes.Expr]:
         """Works like `parse_expression` but if multiple expressions are
         delimited by a comma a :class:`~jinja2.nodes.Tuple` node is created.
@@ -700,9 +703,11 @@ class Parser:
         expression in parentheses.  This is used to figure out if an empty
         tuple is a valid expression or not.
         """
+        import functools
+
         lineno = self.stream.current.lineno
         if simplified:
-            parse = self.parse_primary
+            parse = functools.partial(self.parse_primary, with_namespace=with_namespace)
         elif with_condexpr:
             parse = self.parse_expression
         else:
